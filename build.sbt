@@ -1,5 +1,7 @@
-organization := "net.arya"
-name := "util"
-version := "0.1-SNAPSHOT"
+refriedSonatype
 
 monocle
+
+enablePlugins(GitVersioning)
+enablePlugins(GitBranchPrompt)
+git.useGitDescribe := true
