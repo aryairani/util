@@ -3,7 +3,13 @@ package net.arya.util
 import scalaz.Isomorphism.{<~>, IsoFunctorTemplate}
 import scalaz._, Scalaz._, Ordering._
 
+object EmptySet {
+  def unapply[A](s: Set[A]): Option[Unit] = s.isEmpty.option(())
+}
+
 final class NonEmptySet[A] private[util](val head: A, val tail: Set[A]) {
+
+  override def toString = "NonEmpty" + toSet.toString
 
   def toISet(implicit O: Order[A]): ISet[A] = ISet.fromFoldable(this)
   def toSet: Set[A] = tail + head
@@ -13,6 +19,7 @@ final class NonEmptySet[A] private[util](val head: A, val tail: Set[A]) {
 
   def insert(a: A): NonEmptySet[A] = NonEmptySet(head, tail + a - head)
   def delete(a: A): Set[A] = toSet - a
+  def -(a: A): Set[A] = delete(a)
 
   def map[B](f: A => B) = {
     val fhead: B = f(head)
@@ -37,6 +44,8 @@ object NonEmptySet {
 
   def apply[A](head: A, tail: A*): NonEmptySet[A] = apply(head, tail.toSet)
 
+  def unapply[A](s: Set[A]): Option[(A,Set[A])] = s.isEmpty.fold(none, (s.head, s.tail).some)
+
   def argmaxesBy[F[_],A,B](fa: F[A])(f: A => B)(implicit F: Foldable1[F], ord: math.Ordering[B]): NonEmptySet[A] =
     F.foldMapLeft1[A,(NonEmptySet[A],Option[B])](fa)(a => (NonEmptySet(a),Some(f(a)))) {
       case (maxes @ (as, bs @ Some(b0)), a) =>
@@ -57,11 +66,10 @@ object NonEmptySet {
         NonEmptySet(a.head, a.tail + b.head ++ b.tail)
 
       override def foldMap1[A, B](fa: NonEmptySet[A])(f: (A) ⇒ B)(implicit F: Semigroup[B]): B =
-        foldMap(fa)(a => some(f(a))) getOrElse f(fa.head)
+        implicitly[Foldable[Set]].foldMap1Opt(fa.toSet)(f).get
 
       override def foldMapRight1[A, B](fa: NonEmptySet[A])(z: (A) ⇒ B)(f: (A, ⇒ B) ⇒ B): B =
-        (Foldable[Set].foldRight(fa.tail, none[B])((a, ob) => ob map (f(a, _)) orElse some(z(a)))
-          map (f(fa.head, _)) getOrElse z(fa.head))
+        implicitly[Foldable[Set]].foldMapRight1Opt(fa.toSet)(z)(f).get
 
       override def map[A, B](fa: NonEmptySet[A])(f: (A) ⇒ B): NonEmptySet[B] =
         NonEmptySet(f(fa.head), fa.tail.map(f))
@@ -71,14 +79,15 @@ object NonEmptySet {
     }
 
   implicit def nonEmptySetSemigroup[A]: Semigroup[NonEmptySet[A]] = nonEmptySetInstance.semigroup[A]
-  implicit def nonEmptySetShow[A:Show]: Show[NonEmptySet[A]] = foldableShow[NonEmptySet,A]("NESet(", ", ", ")")
+//  implicit def nonEmptySetShow[A:Show]: Show[NonEmptySet[A]] = foldableShow[NonEmptySet,A]("NESet(", ", ", ")")
+  implicit def nonEmptySetOrder[A:Order]: Order[NonEmptySet[A]] = Order[Set[A]].contramap(_.toSet)
 
-  def foldableShow[F[_]:Foldable,A:Show](prefix: String, separator: String, suffix: String): Show[F[A]] =
-    Show.show[F[A]] { fa ⇒
-      Cord.stringToCord(prefix) |+|
-        Cord.mkCord(Cord.stringToCord(separator), fa.foldLeft[List[Cord]](Nil)( (l,a) ⇒ a.show :: l ).reverse: _*) |+|
-        Cord.stringToCord(suffix)
-    }
+//  private def foldableShow[F[_]:Foldable,A:Show](prefix: String, separator: String, suffix: String): Show[F[A]] =
+//    Show.show[F[A]] { fa ⇒
+//      Cord.stringToCord(prefix) |+|
+//        Cord.mkCord(Cord.stringToCord(separator), fa.foldLeft[List[Cord]](Nil)( (l,a) ⇒ a.show :: l ).reverse: _*) |+|
+//        Cord.stringToCord(suffix)
+//    }
 
   val oneAndNesIso: NonEmptySet <~> OneAnd[Set,?] =
     new IsoFunctorTemplate[NonEmptySet, OneAnd[Set,?]] {
@@ -86,4 +95,3 @@ object NonEmptySet {
       def from[A](ga: OneAnd[Set,A]): NonEmptySet[A] = NonEmptySet(ga.head, ga.tail)
     }
 }
-
