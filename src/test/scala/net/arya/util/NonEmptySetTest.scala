@@ -17,4 +17,6 @@ class NonEmptySetTest extends Spec {
   checkAll("NonEmptySet Foldable1", foldable1.laws[NonEmptySet])
   checkAll("NonEmptySet Functor", functor.laws[NonEmptySet])
   checkAll("NonEmptySet Plus", plus.laws[NonEmptySet])
+
 }
+

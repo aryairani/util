@@ -4,7 +4,7 @@ import scalaz.Isomorphism.{<~>, IsoFunctorTemplate}
 import scalaz._, Scalaz._, Ordering._
 
 object EmptySet {
-  def unapply[A](s: Set[A]): Option[Unit] = s.isEmpty.option(())
+  def unapply[A](s: Set[A]): Boolean = s.isEmpty
 }
 
 final class NonEmptySet[A] private[util](val head: A, val tail: Set[A]) {
