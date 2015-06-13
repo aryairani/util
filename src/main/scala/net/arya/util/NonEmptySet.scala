@@ -19,6 +19,7 @@ final class NonEmptySet[A] private[util](val head: A, val tail: Set[A]) {
 
   def insert(a: A): NonEmptySet[A] = NonEmptySet(head, tail + a - head)
   def delete(a: A): Set[A] = toSet - a
+  def +(a: A): NonEmptySet[A] = insert(a)
   def -(a: A): Set[A] = delete(a)
 
   def map[B](f: A => B) = {

@@ -9,9 +9,7 @@ import scalaz.Ordering._
 import scalaz._
 import scala.math.Ordering
 
-object foldable extends FoldableFunctions
-
-trait FoldableFunctions {
+object foldable {
 
   /** traverse for States until one returns true */
   // todo: rewrite this to short-circuit
